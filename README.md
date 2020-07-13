@@ -58,6 +58,7 @@ i.e.:
 * Sensitive data such as card details should be stored in PCI DSS compliant way. Such implementation is our of scope. 
 * I assume in both "capture" and "refund" endpoint, currency code will be the same as the authorisation call. Currency conversion is out of scope.
 * Currency conversion will not be implemented, in case currencies don't match, an error will be returned back to the client.
+* Client sends only positive values for amount. Hence during validation, the amount will be checked so that it will fail if negative.
 
 ## How to run: 
 ### Prerequisites: 
@@ -130,11 +131,11 @@ Returns the authorisation unique ID.
  
 * **Error Response:**
 
-  * **Code:** 404 NOT FOUND <br />
+  * **Code:** 400 BAD REQUEST <br />
   
-      In case the card number cannot be found.
+      In case the required fields are wrong or invalid.
       
-      **Content:** `{ "error": "string indicating the error" }`
+      **Content:** `{ "error": "string indicating the errors" }`
     
   OR
 
@@ -200,6 +201,14 @@ Returns the amount and currency available after the avoid call has been processe
     **Content:** `{ "error": "string indicating the error" }`
     
   OR
+  
+  * **Code:** 400 BAD REQUEST <br />
+  
+      In case the required fields are wrong or invalid.
+      
+      **Content:** `{ "error": "string indicating the errors" }`
+    
+  OR
 
   * **Code:** 422 UNPROCESSABLE ENTITY <br />
   
@@ -262,6 +271,14 @@ Returns the amount and currency available after capturing some or all of the aut
     In case the authorisation ID cannot be found.
   
     **Content:** `{ "error": "string indicating the error" }`
+    
+  OR
+  
+  * **Code:** 400 BAD REQUEST <br />
+  
+      In case the required fields are wrong or invalid.
+      
+      **Content:** `{ "error": "string indicating the errors" }`
     
   OR
 
@@ -329,6 +346,14 @@ Returns the amount and currency available after capturing some or all of the aut
     
   OR
 
+  * **Code:** 400 BAD REQUEST <br />
+  
+      In case the required fields are wrong or invalid.
+      
+      **Content:** `{ "error": "string indicating the errors" }`
+    
+  OR
+  
   * **Code:** 422 UNPROCESSABLE ENTITY <br />
   
       In case any of the fields are invalid.
@@ -372,5 +397,7 @@ go test ./... -run Integration
 ### Future work
 * Implementation of proper data structure for financial information such as money amounts.
 * Currency conversion, [API](https://exchangeratesapi.io/) can be used to query foreign exchange rates for currency conversion.
+By integrating with this API, the currency code check can also be improved as the proposed solution only
+checks whether the code is a 3 letter string without checking if it is an actual currency code.
 * The database store should be persisted using Docker Volumes so that even when the service is restarted, the transaction data
 are kept safe and ready to be used once the service is up and running again.
