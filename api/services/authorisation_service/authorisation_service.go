@@ -5,16 +5,16 @@ import (
 	"github.com/google/uuid"
 	"net/http"
 	dal "payment-gateway-api/api/data_access"
-	"payment-gateway-api/api/data_access/database_model"
-	"payment-gateway-api/api/domain/gateway_domain/auth_domain"
-	"payment-gateway-api/api/domain/gateway_domain/error_domain"
+	"payment-gateway-api/api/data_access/database_model/auth"
+	"payment-gateway-api/api/domain/auth_domain"
+	"payment-gateway-api/api/domain/error_domain"
 	"time"
 )
 
 type authorisationService struct{}
 
 type authorisationServiceInterface interface {
-	AuthorisePayment(input auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface)
+	AuthoriseTransaction(auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface)
 	GetAllRecords() (string, error_domain.GatewayErrorInterface)
 }
 
@@ -22,7 +22,7 @@ var (
 	AuthorisationService authorisationServiceInterface = &authorisationService{}
 )
 
-func (a *authorisationService) AuthorisePayment(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {
+func (a *authorisationService) AuthoriseTransaction(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {
 	errs := request.ValidateFields()
 	if len(errs) > 0 {
 		return nil, error_domain.New(http.StatusBadRequest, errs...)
@@ -31,21 +31,19 @@ func (a *authorisationService) AuthorisePayment(request auth_domain.AuthRequest)
 	//generate uniqueID
 	authId := uuid.New().String()
 
-	record := database_model.Auth{
+	record := auth.Auth{
 		ID:               authId,
 		Number:           request.CardDetails.Number,
 		ExpiryDate:       request.CardDetails.ExpiryDate,
 		AuthorisedAmount: request.Amount,
 		AvailableAmount:  request.Amount,
 		Currency:         request.Currency,
-		AuditData: database_model.AuditData{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			DeletedAt: nil,
-		},
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+		DeletedAt:        time.Time{},
 	}
 
-	err := dal.Db.CreateAuthRecord(&record)
+	err := dal.Db.InsertAuthRecord(&record)
 	if err != nil {
 		return nil, &error_domain.GatewayError{
 			Code:  http.StatusInternalServerError,
@@ -64,13 +62,9 @@ func (a *authorisationService) AuthorisePayment(request auth_domain.AuthRequest)
 }
 
 func (a *authorisationService) GetAllRecords() (string, error_domain.GatewayErrorInterface) {
-	err := dal.Db.Init()
-	if err != nil {
-		return "", error_domain.New(http.StatusBadRequest, err)
-	}
-	var records []database_model.Auth
+	var records []auth.Auth
 
-	records, err = dal.Db.GetAllRecords()
+	records, err := dal.Db.GetAllAuthRecords()
 	if err != nil {
 		return "", error_domain.New(http.StatusBadRequest, err)
 	}

@@ -59,6 +59,10 @@ i.e.:
 * I assume in both "capture" and "refund" endpoint, currency code will be the same as the authorisation call. Currency conversion is out of scope.
 * Currency conversion will not be implemented, in case currencies don't match, an error will be returned back to the client.
 * Client sends only positive values for amount. Hence during validation, the amount will be checked so that it will fail if negative.
+* I assume to void a transaction, this cannot be in either capture or refund stages of its lifecycle, hence, the service will check that
+in the db whether a refund or a capture operation has previously been done. In fact, the operation table will keep track of what operations (authorisazion,
+void, capture and refund) have been executed for each authID. So, if there is more than 1 operation (one being the authorization operation) then,
+according to the requirements, the void cannot be executed.
 
 ## How to run: 
 ### Prerequisites: 
@@ -194,7 +198,7 @@ Returns the amount and currency available after the avoid call has been processe
  
 * **Error Response:**
 
-  * **Code:** 204 No Content <br />
+  * **Code:** 404 NOT FOUND <br />
   
     In case the authorisation ID cannot be found.
   

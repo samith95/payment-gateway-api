@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestRecommendationResponse(t *testing.T) {
+func TestAuthResponse(t *testing.T) {
 	expectedResponse := AuthResponse{
 		AuthID:    "123987-644ef1sdf-wf6d1fs1fr4w6f-df6ws54ef1",
 		IsSuccess: true,
@@ -46,9 +46,9 @@ func TestAuthRequest_ValidateFields_Invalid(t *testing.T) {
 	expectedErrors = append(expectedErrors, errors.New("amount cannot be negative"))
 	expectedErrors = append(expectedErrors, errors.New("currency code is invalid"))
 
-	errs := request.ValidateFields()
+	actualErrors := request.ValidateFields()
 
-	assert.EqualValues(t, expectedErrors, errs)
+	assert.EqualValues(t, expectedErrors, actualErrors)
 }
 
 func TestAuthRequest_ValidateFields_Valid(t *testing.T) {
@@ -63,9 +63,7 @@ func TestAuthRequest_ValidateFields_Valid(t *testing.T) {
 		Currency:    "GBP",
 	}
 
-	expectedErrors := []error{}
+	actualErrors := request.ValidateFields()
 
-	errs := request.ValidateFields()
-
-	assert.EqualValues(t, expectedErrors, errs)
+	assert.EqualValues(t, []error{}, actualErrors)
 }

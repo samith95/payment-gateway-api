@@ -3,8 +3,8 @@ package authorisation_controller
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"payment-gateway-api/api/domain/gateway_domain/auth_domain"
-	"payment-gateway-api/api/domain/gateway_domain/error_domain"
+	"payment-gateway-api/api/domain/auth_domain"
+	"payment-gateway-api/api/domain/error_domain"
 	"payment-gateway-api/api/services/authorisation_service"
 )
 
@@ -20,7 +20,7 @@ func HandleAuthorisationRequest(c *gin.Context) {
 		return
 	}
 
-	result, apiError := authorisation_service.AuthorisationService.AuthorisePayment(request)
+	result, apiError := authorisation_service.AuthorisationService.AuthoriseTransaction(request)
 	if apiError != nil {
 		c.JSON(apiError.Status(), apiError)
 		return

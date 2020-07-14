@@ -8,15 +8,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"payment-gateway-api/api/domain/gateway_domain/auth_domain"
-	"payment-gateway-api/api/domain/gateway_domain/error_domain"
+	"payment-gateway-api/api/domain/auth_domain"
+	"payment-gateway-api/api/domain/error_domain"
 	"payment-gateway-api/api/services/authorisation_service"
 	"strings"
 	"testing"
 )
 
 var (
-	authorisePaymentFunc func(auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface)
+	authoriseTransactionFunc func(auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface)
 )
 
 type authoriseServiceMock struct{}
@@ -25,8 +25,8 @@ func (a *authoriseServiceMock) GetAllRecords() (string, error_domain.GatewayErro
 	panic("implement me")
 }
 
-func (a *authoriseServiceMock) AuthorisePayment(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {
-	return authorisePaymentFunc(request)
+func (a *authoriseServiceMock) AuthoriseTransaction(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {
+	return authoriseTransactionFunc(request)
 }
 
 func TestHandleAuthorisationRequestSuccess(t *testing.T) {
@@ -37,7 +37,7 @@ func TestHandleAuthorisationRequestSuccess(t *testing.T) {
 		Currency:  "GBP",
 	}
 
-	authorisePaymentFunc = func(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {
+	authoriseTransactionFunc = func(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {
 		return &expectedResponse, nil
 	}
 
@@ -80,7 +80,7 @@ func TestHandleAuthorisationRequestErrorFromService(t *testing.T) {
 		Error: "error_from_service",
 	}
 
-	authorisePaymentFunc = func(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {
+	authoriseTransactionFunc = func(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {
 		return nil, &expectedError
 	}
 
@@ -123,8 +123,6 @@ func TestHandleAuthorisationRequestInvalidBody(t *testing.T) {
 		Code:  http.StatusBadRequest,
 		Error: "request body is invalid",
 	}
-
-	authorisation_service.AuthorisationService = &authoriseServiceMock{}
 
 	response := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(response)

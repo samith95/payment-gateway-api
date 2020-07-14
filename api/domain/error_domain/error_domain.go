@@ -11,7 +11,7 @@ type GatewayErrorInterface interface {
 }
 
 type GatewayError struct {
-	Code  int
+	Code  int    `json:"-"`
 	Error string `json:"error"`
 }
 
