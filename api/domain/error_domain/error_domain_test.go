@@ -29,6 +29,5 @@ func TestExchangeError(t *testing.T) {
 
 	actualError, err := NewApiErrorFromBytes(bytes)
 	assert.Nil(t, err)
-	assert.EqualValues(t, expectedError.Code, actualError.Status())
 	assert.EqualValues(t, expectedError.Error, actualError.ErrorMessage())
 }

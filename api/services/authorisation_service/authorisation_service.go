@@ -1,9 +1,11 @@
 package authorisation_service
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"net/http"
+	"payment-gateway-api/api/const/error_constant"
 	dal "payment-gateway-api/api/data_access"
 	"payment-gateway-api/api/data_access/database_model/auth"
 	"payment-gateway-api/api/domain/auth_domain"
@@ -28,6 +30,17 @@ func (a *authorisationService) AuthoriseTransaction(request auth_domain.AuthRequ
 		return nil, error_domain.New(http.StatusBadRequest, errs...)
 	}
 
+	isReject, err := dal.Db.CheckRejectByCardNumber("authorisation", request.CardDetails.Number)
+	if err != nil {
+		return nil, &error_domain.GatewayError{
+			Code:  http.StatusInternalServerError,
+			Error: err.Error(),
+		}
+	}
+	if isReject {
+		return nil, error_domain.New(http.StatusUnauthorized, errors.New(error_constant.AuthorisationFailure))
+	}
+
 	//generate uniqueID
 	authId := uuid.New().String()
 
@@ -43,7 +56,7 @@ func (a *authorisationService) AuthoriseTransaction(request auth_domain.AuthRequ
 		DeletedAt:        time.Time{},
 	}
 
-	err := dal.Db.InsertAuthRecord(&record)
+	err = dal.Db.InsertAuthRecord(&record)
 	if err != nil {
 		return nil, &error_domain.GatewayError{
 			Code:  http.StatusInternalServerError,

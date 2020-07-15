@@ -114,7 +114,7 @@ func TestHandleAuthorisationRequestErrorFromService(t *testing.T) {
 	var actualError error_domain.GatewayError
 	err = json.Unmarshal(response.Body.Bytes(), &actualError)
 	assert.Nil(t, err)
-	assert.EqualValues(t, expectedError, actualError)
+	assert.EqualValues(t, expectedError.ErrorMessage(), actualError.ErrorMessage())
 }
 
 func TestHandleAuthorisationRequestInvalidBody(t *testing.T) {
@@ -145,5 +145,5 @@ func TestHandleAuthorisationRequestInvalidBody(t *testing.T) {
 	var actualError error_domain.GatewayError
 	err = json.Unmarshal(response.Body.Bytes(), &actualError)
 	assert.Nil(t, err)
-	assert.EqualValues(t, expectedError, actualError)
+	assert.EqualValues(t, expectedError.ErrorMessage(), actualError.ErrorMessage())
 }

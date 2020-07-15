@@ -1,4 +1,4 @@
-package void_controller
+package capture_controller
 
 import (
 	"bytes"
@@ -8,40 +8,43 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"payment-gateway-api/api/domain/capture_domain"
 	"payment-gateway-api/api/domain/error_domain"
-	"payment-gateway-api/api/domain/void_domain"
-	"payment-gateway-api/api/services/void_service"
+	"payment-gateway-api/api/services/capture_service"
 	"strings"
 	"testing"
 )
 
 var (
-	voidTransaction func(void_domain.VoidRequest) (*void_domain.VoidResponse, error_domain.GatewayErrorInterface)
+	captureTransactionAmount func(request capture_domain.CaptureRequest) (*capture_domain.CaptureResponse, error_domain.GatewayErrorInterface)
 )
 
-type voidServiceMock struct{}
+type captureServiceMock struct{}
 
-func (v voidServiceMock) VoidTransaction(request void_domain.VoidRequest) (*void_domain.VoidResponse, error_domain.GatewayErrorInterface) {
-	return voidTransaction(request)
+func (v captureServiceMock) CaptureTransactionAmount(request capture_domain.CaptureRequest) (*capture_domain.CaptureResponse, error_domain.GatewayErrorInterface) {
+	return captureTransactionAmount(request)
 }
 
-func TestHandleVoidRequest(t *testing.T) {
-	expectedResponse := void_domain.VoidResponse{
+func TestHandleCaptureRequest(t *testing.T) {
+	expectedResponse := capture_domain.CaptureResponse{
 		IsSuccess: true,
 		Amount:    10,
 		Currency:  "LKR",
 	}
 
-	voidTransaction = func(request void_domain.VoidRequest) (response *void_domain.VoidResponse, errorInterface error_domain.GatewayErrorInterface) {
+	captureTransactionAmount = func(request capture_domain.CaptureRequest) (*capture_domain.CaptureResponse, error_domain.GatewayErrorInterface) {
 		return &expectedResponse, nil
 	}
 
-	void_service.VoidService = &voidServiceMock{}
+	capture_service.CaptureService = &captureServiceMock{}
 
 	response := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(response)
 
-	request := void_domain.VoidRequest{AuthId: "valid_string"}
+	request := capture_domain.CaptureRequest{
+		AuthId: "valid_string",
+		Amount: 5,
+	}
 
 	b, err := json.Marshal(&request)
 	if err != nil {
@@ -53,30 +56,32 @@ func TestHandleVoidRequest(t *testing.T) {
 		t.Fail()
 	}
 
-	HandleVoidRequest(c)
-	var actualResponse void_domain.VoidResponse
+	HandleCaptureRequest(c)
+	var actualResponse capture_domain.CaptureResponse
 	err = json.Unmarshal(response.Body.Bytes(), &actualResponse)
 	assert.Nil(t, err)
 	assert.EqualValues(t, expectedResponse, actualResponse)
 }
 
-func TestHandleVoidRequest_ErrorFromService(t *testing.T) {
+func TestHandleCaptureRequest_ErrorFromService(t *testing.T) {
 	expectedError := error_domain.GatewayError{
 		Code:  http.StatusUnprocessableEntity,
 		Error: "error_from_service",
 	}
 
-	voidTransaction = func(request void_domain.VoidRequest) (response *void_domain.VoidResponse, errorInterface error_domain.GatewayErrorInterface) {
+	captureTransactionAmount = func(request capture_domain.CaptureRequest) (*capture_domain.CaptureResponse, error_domain.GatewayErrorInterface) {
 		return nil, &expectedError
 	}
 
-	void_service.VoidService = &voidServiceMock{}
+	capture_service.CaptureService = &captureServiceMock{}
 
 	response := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(response)
 
-	request := void_domain.VoidRequest{AuthId: "valid_string"}
-
+	request := capture_domain.CaptureRequest{
+		AuthId: "valid_string",
+		Amount: 5,
+	}
 	b, err := json.Marshal(&request)
 	if err != nil {
 		t.Fail()
@@ -87,14 +92,14 @@ func TestHandleVoidRequest_ErrorFromService(t *testing.T) {
 		t.Fail()
 	}
 
-	HandleVoidRequest(c)
+	HandleCaptureRequest(c)
 	var actualError error_domain.GatewayError
 	err = json.Unmarshal(response.Body.Bytes(), &actualError)
 	assert.Nil(t, err)
 	assert.EqualValues(t, expectedError.ErrorMessage(), actualError.ErrorMessage())
 }
 
-func TestHandleVoidRequest_InvalidBody(t *testing.T) {
+func TestHandleCaptureRequest_InvalidBody(t *testing.T) {
 	var err error
 	expectedError := error_domain.GatewayError{
 		Code:  http.StatusBadRequest,
@@ -118,7 +123,7 @@ func TestHandleVoidRequest_InvalidBody(t *testing.T) {
 		t.Fail()
 	}
 
-	HandleVoidRequest(c)
+	HandleCaptureRequest(c)
 	var actualError error_domain.GatewayError
 	err = json.Unmarshal(response.Body.Bytes(), &actualError)
 	assert.Nil(t, err)

@@ -1,4 +1,4 @@
-package void_service
+package capture_service
 
 import (
 	"errors"
@@ -9,15 +9,17 @@ import (
 	"payment-gateway-api/api/data_access/database_model/auth"
 	"payment-gateway-api/api/data_access/database_model/operation"
 	"payment-gateway-api/api/data_access/database_model/reject"
-	"payment-gateway-api/api/domain/void_domain"
+	"payment-gateway-api/api/domain/capture_domain"
 	"payment-gateway-api/api/services/common_service"
 	"testing"
 )
 
 var (
-	getAuthRecordByID        func(string) (bool, *auth.Auth, error)
-	softDeleteAuthRecordByID func(string) error
-	isAuthorisedState        func(string, string) (bool, error)
+	getAuthRecordByID             func(string) (bool, *auth.Auth, error)
+	softDeleteAuthRecordByID      func(string) error
+	isAuthorisedState             func(string, string) (bool, error)
+	checkRejectByCardNumber       func(string, string) (bool, error)
+	updateAvailableAmountByAuthID func(string, float32, string) error
 )
 
 type databaseMock struct{}
@@ -31,12 +33,12 @@ func (d databaseMock) InsertRejects(*reject.Reject) error {
 	panic("implement me")
 }
 
-func (d databaseMock) CheckRejectByCardNumber(string, string) (bool, error) {
-	panic("implement me")
+func (d databaseMock) CheckRejectByCardNumber(opName string, cardNumber string) (bool, error) {
+	return checkRejectByCardNumber(opName, cardNumber)
 }
 
-func (d databaseMock) UpdateAvailableAmountByAuthID(string, float32, string) error {
-	panic("implement me")
+func (d databaseMock) UpdateAvailableAmountByAuthID(id string, newAmount float32, opName string) error {
+	return updateAvailableAmountByAuthID(id, newAmount, opName)
 }
 
 func (d databaseMock) Setup(string) error {
@@ -75,9 +77,12 @@ func (d databaseMock) DeleteOperationRecordsByAuthID(string) error {
 	return nil
 }
 
-func TestVoidService_VoidTransaction_NotVoidable(t *testing.T) {
+func TestCaptureService_CaptureTransactionAmount_NotVoidable(t *testing.T) {
 
-	request := void_domain.VoidRequest{AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28"}
+	request := capture_domain.CaptureRequest{
+		AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28",
+		Amount: 10,
+	}
 
 	err1 := errors.New(error_constant.TransactionStateInvalid)
 	expectedErrors := make([]error, 0)
@@ -89,38 +94,52 @@ func TestVoidService_VoidTransaction_NotVoidable(t *testing.T) {
 
 	common_service.CommonService = &commonServiceMock{}
 
-	actualResponse, err := VoidService.VoidTransaction(request)
+	actualResponse, err := CaptureService.CaptureTransactionAmount(request)
 	assert.Nil(t, actualResponse)
 	assert.EqualValues(t, fmt.Sprintf("%v", expectedErrors), err.ErrorMessage())
 }
 
-func TestVoidService_VoidTransaction(t *testing.T) {
-	request := void_domain.VoidRequest{AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28"}
+func TestCaptureService_CaptureTransactionAmount(t *testing.T) {
+	request := capture_domain.CaptureRequest{
+		AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28",
+		Amount: 5,
+	}
 
-	expectedResponse := void_domain.VoidResponse{
+	expectedResponse := capture_domain.CaptureResponse{
 		IsSuccess: true,
-		Amount:    10,
+		Amount:    5,
 		Currency:  "GBP",
 	}
 
 	getAuthRecordByID = func(id string) (bool, *auth.Auth, error) {
 		return true, &auth.Auth{
-			AuthorisedAmount: expectedResponse.Amount,
+			ExpiryDate:       "12-3999",
+			AvailableAmount:  request.Amount + expectedResponse.Amount,
+			AuthorisedAmount: request.Amount + expectedResponse.Amount,
 			Currency:         expectedResponse.Currency,
 		}, nil
 	}
-	isAuthorisedState = func(opName, id string) (b bool, err error) {
-		return true, nil
+
+	checkRejectByCardNumber = func(opName string, cardNumber string) (bool, error) {
+		return false, nil
 	}
 
 	softDeleteAuthRecordByID = func(s string) error {
 		return nil
 	}
 
+	updateAvailableAmountByAuthID = func(id string, newAmount float32, opName string) error {
+		return nil
+	}
+
+	isAuthorisedState = func(opName, id string) (b bool, err error) {
+		return true, nil
+	}
+
 	common_service.CommonService = &commonServiceMock{}
 	data_access.Db = &databaseMock{}
 
-	actualResponse, err := VoidService.VoidTransaction(request)
+	actualResponse, err := CaptureService.CaptureTransactionAmount(request)
 	assert.Nil(t, err)
 	assert.EqualValues(t, expectedResponse.IsSuccess, actualResponse.IsSuccess)
 	assert.EqualValues(t, expectedResponse.Amount, actualResponse.Amount)

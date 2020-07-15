@@ -3,9 +3,11 @@ package void_service
 import (
 	"errors"
 	"net/http"
+	"payment-gateway-api/api/const/error_constant"
 	"payment-gateway-api/api/data_access"
 	"payment-gateway-api/api/domain/error_domain"
 	"payment-gateway-api/api/domain/void_domain"
+	"payment-gateway-api/api/services/common_service"
 )
 
 type voidService struct{}
@@ -15,7 +17,8 @@ type voidServiceInterface interface {
 }
 
 var (
-	VoidService voidServiceInterface = &voidService{}
+	VoidService   voidServiceInterface = &voidService{}
+	operationName                      = "void"
 )
 
 func (v *voidService) VoidTransaction(request void_domain.VoidRequest) (*void_domain.VoidResponse, error_domain.GatewayErrorInterface) {
@@ -25,32 +28,29 @@ func (v *voidService) VoidTransaction(request void_domain.VoidRequest) (*void_do
 	}
 
 	//check db for capture or refund operations
-	ok, opsRecords, err := data_access.Db.GetAllOperationsByAuthID(request.AuthId)
+	isValid, err := common_service.CommonService.IsAuthorisedState(operationName, request.AuthId)
 	if err != nil {
-		return nil, error_domain.New(http.StatusInternalServerError, errs...)
+		return nil, error_domain.New(http.StatusInternalServerError, errors.New(error_constant.UnableToCheckForInvalidState))
+	}
+	if !isValid {
+		return nil, error_domain.New(http.StatusUnprocessableEntity, errors.New(error_constant.TransactionStateInvalid))
 	}
 
-	//if there are more than 1 operation with that unique auth ID, it means it must have
-	//either be a void, a capture or a refund hence, the void cannot be executed.
-	if ok && len(opsRecords) > 1 {
-		return nil, error_domain.New(http.StatusUnprocessableEntity, errors.New("transaction is not in a state that allow cancellation"))
-	}
-
-	isPresent, authRecord, err := data_access.Db.GetAuthRecordByID(request.AuthId)
+	isSoftDeleted, authRecord, err := data_access.Db.GetAuthRecordByID(request.AuthId)
 	if err != nil {
 		if err.Error() == "record not found" {
-			return nil, error_domain.New(http.StatusNotFound, errors.New("authorisation transaction not found"))
+			return nil, error_domain.New(http.StatusNotFound, errors.New(error_constant.TransactionNotFound))
 		}
-		return nil, error_domain.New(http.StatusInternalServerError, errors.New("unable to retrieve authorisation transaction"))
+		return nil, error_domain.New(http.StatusInternalServerError, errors.New(error_constant.TransactionRetrievalFailure))
 	}
-	if !isPresent {
+	if !isSoftDeleted {
 		return nil, error_domain.New(http.StatusOK, errors.New("transaction has already been cancelled"))
 	}
 
 	//otherwise we can soft delete the transaction by initialising the deletedAt field
 	err = data_access.Db.SoftDeleteAuthRecordByID(request.AuthId)
 	if err != nil {
-		return nil, error_domain.New(http.StatusUnprocessableEntity, errors.New("internal issue preventing transaction to be cancelled"))
+		return nil, error_domain.New(http.StatusUnprocessableEntity, errors.New(error_constant.UnableToVoidTransaction))
 	}
 
 	response := void_domain.VoidResponse{

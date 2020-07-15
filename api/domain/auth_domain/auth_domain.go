@@ -3,10 +3,10 @@ package auth_domain
 import (
 	"errors"
 	"github.com/joeljunstrom/go-luhn"
-	"payment-gateway-api/api/config"
+	"payment-gateway-api/api/const/error_constant"
+	"payment-gateway-api/api/domain/common_validation"
 	"regexp"
 	"strings"
-	"time"
 )
 
 type AuthRequest struct {
@@ -33,21 +33,21 @@ func (r *AuthRequest) ValidateFields() []error {
 	var err = make([]error, 0)
 	r.CardDetails.Number = strings.Replace(r.CardDetails.Number, " ", "", -1)
 	if !isCardNumberValid(r.CardDetails.Number) {
-		err = append(err, errors.New("card number is not valid"))
+		err = append(err, errors.New(error_constant.InvalidCardNumber))
 	}
 	r.CardDetails.ExpiryDate = strings.Replace(r.CardDetails.ExpiryDate, " ", "", -1)
-	if !IsExpiryDateValid(r.CardDetails.ExpiryDate) {
-		err = append(err, errors.New("expiry date is not valid"))
+	if !common_validation.IsExpiryDateValid(r.CardDetails.ExpiryDate) {
+		err = append(err, errors.New(error_constant.InvalidCardExpiryDate))
 	}
 	r.CardDetails.Cvv = strings.Replace(r.CardDetails.Cvv, " ", "", -1)
 	if !isCvvValid(r.CardDetails.Cvv) {
-		err = append(err, errors.New("cvv number is not valid"))
+		err = append(err, errors.New(error_constant.InvalidCvv))
 	}
-	if !isAmountValid(r.Amount) {
-		err = append(err, errors.New("amount cannot be negative"))
+	if !common_validation.IsAmountValid(r.Amount) {
+		err = append(err, errors.New(error_constant.InvalidAmount))
 	}
 	if !isCurrencyCodeValid(r.Currency) {
-		err = append(err, errors.New("currency code is invalid"))
+		err = append(err, errors.New(error_constant.InvalidCurrencyCode))
 	}
 	return err
 }
@@ -57,35 +57,10 @@ func isCardNumberValid(cardNumber string) bool {
 	return luhn.Valid(cardNumber)
 }
 
-//IsExpiryDateValid checks that the card is not expired
-func IsExpiryDateValid(expiryDate string) bool {
-	expirationDate, err := time.Parse(config.ExpirationDateLayout, expiryDate)
-	if err != nil {
-		return false
-	}
-
-	currentTime, err := time.Parse(config.ExpirationDateLayout, time.Now().Format(config.ExpirationDateLayout))
-	if err != nil {
-		return false
-	}
-
-	//check that card is not expired
-	if currentTime.After(expirationDate) {
-		return false
-	}
-
-	return true
-}
-
 //isCvvValid checks that the CVV is made of 3 or 4 integers
 func isCvvValid(cvv string) bool {
 	isValid, _ := regexp.MatchString("^[0-9]{3,4}$", cvv)
 	return isValid
-}
-
-//isAmountValid checks in case amount is negative or zero
-func isAmountValid(amount float32) bool {
-	return amount > 0
 }
 
 //isCurrencyCodeValid checks the currency is a 3 letter string

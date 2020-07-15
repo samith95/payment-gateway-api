@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/stretchr/testify/assert"
+	"payment-gateway-api/api/const/error_constant"
 	"testing"
 )
 
@@ -40,11 +41,11 @@ func TestAuthRequest_ValidateFields_Invalid(t *testing.T) {
 	}
 
 	expectedErrors := []error{}
-	expectedErrors = append(expectedErrors, errors.New("card number is not valid"))
-	expectedErrors = append(expectedErrors, errors.New("expiry date is not valid"))
-	expectedErrors = append(expectedErrors, errors.New("cvv number is not valid"))
-	expectedErrors = append(expectedErrors, errors.New("amount cannot be negative"))
-	expectedErrors = append(expectedErrors, errors.New("currency code is invalid"))
+	expectedErrors = append(expectedErrors, errors.New(error_constant.InvalidCardNumber))
+	expectedErrors = append(expectedErrors, errors.New(error_constant.InvalidCardExpiryDate))
+	expectedErrors = append(expectedErrors, errors.New(error_constant.InvalidCvv))
+	expectedErrors = append(expectedErrors, errors.New(error_constant.InvalidAmount))
+	expectedErrors = append(expectedErrors, errors.New(error_constant.InvalidCurrencyCode))
 
 	actualErrors := request.ValidateFields()
 

@@ -7,16 +7,34 @@ import (
 	"payment-gateway-api/api/data_access"
 	"payment-gateway-api/api/data_access/database_model/auth"
 	"payment-gateway-api/api/data_access/database_model/operation"
+	"payment-gateway-api/api/data_access/database_model/reject"
 	"payment-gateway-api/api/domain/auth_domain"
 	"payment-gateway-api/api/domain/error_domain"
 	"testing"
 )
 
 var (
-	insertAuthRecord func(*auth.Auth) error
+	insertAuthRecord        func(*auth.Auth) error
+	checkRejectByCardNumber func(string, string) (bool, error)
 )
 
 type databaseMock struct{}
+
+func (db *databaseMock) GetOperationByAuthIDAndOperationName(string, string) (bool, operation.Operation, error) {
+	panic("implement me")
+}
+
+func (db *databaseMock) InsertRejects(*reject.Reject) error {
+	panic("implement me")
+}
+
+func (db *databaseMock) CheckRejectByCardNumber(opName string, cardNumber string) (bool, error) {
+	return checkRejectByCardNumber(opName, cardNumber)
+}
+
+func (db *databaseMock) UpdateAvailableAmountByAuthID(string, float32, string) error {
+	panic("implement me")
+}
 
 func (db *databaseMock) SoftDeleteAuthRecordByID(string) error {
 	return nil
@@ -24,10 +42,6 @@ func (db *databaseMock) SoftDeleteAuthRecordByID(string) error {
 
 func (db *databaseMock) HardDeleteAuthRecordByID(string) error {
 	return nil
-}
-
-func (db *databaseMock) GetAllOperationsByAuthID(string) (bool, []operation.Operation, error) {
-	return false, nil, nil
 }
 
 func (db *databaseMock) DeleteOperationRecordsByAuthID(string) error {
@@ -75,6 +89,10 @@ func TestAuthorisationServiceAuthorisePayment(t *testing.T) {
 
 	insertAuthRecord = func(auth *auth.Auth) error {
 		return nil
+	}
+
+	checkRejectByCardNumber = func(opName string, cardNumber string) (b bool, err error) {
+		return false, nil
 	}
 
 	data_access.Db = &databaseMock{}

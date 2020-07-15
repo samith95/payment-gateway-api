@@ -140,7 +140,15 @@ Returns the authorisation unique ID.
       In case the required fields are wrong or invalid.
       
       **Content:** `{ "error": "string indicating the errors" }`
-    
+  
+  OR  
+     
+  * **Code:** 401 UNAUTHORISED <br />
+  
+      In case the card number is rejected.
+      
+      **Content:** `{ "error": "string indicating the errors" }`
+        
   OR
 
   * **Code:** 422 UNPROCESSABLE ENTITY <br />
@@ -283,7 +291,14 @@ Returns the amount and currency available after capturing some or all of the aut
       In case the required fields are wrong or invalid.
       
       **Content:** `{ "error": "string indicating the errors" }`
-    
+  OR
+      
+  * **Code:** 401 UNAUTHORISED <br />
+  
+      In case the authorised card is now expired or the card number is rejected.
+      
+      **Content:** `{ "error": "string indicating the errors" }`
+        
   OR
 
   * **Code:** 422 UNPROCESSABLE ENTITY <br />
@@ -355,7 +370,14 @@ Returns the amount and currency available after capturing some or all of the aut
       In case the required fields are wrong or invalid.
       
       **Content:** `{ "error": "string indicating the errors" }`
-    
+  OR
+      
+  * **Code:** 401 UNAUTHORISED <br />
+  
+      In case the authorised card is now expired or the card number is rejected.
+      
+      **Content:** `{ "error": "string indicating the errors" }`
+            
   OR
   
   * **Code:** 422 UNPROCESSABLE ENTITY <br />

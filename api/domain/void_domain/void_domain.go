@@ -2,7 +2,8 @@ package void_domain
 
 import (
 	"errors"
-	"regexp"
+	"payment-gateway-api/api/const/error_constant"
+	"payment-gateway-api/api/domain/common_validation"
 	"strings"
 )
 
@@ -20,14 +21,8 @@ type VoidResponse struct {
 func (v *VoidRequest) ValidateFields() []error {
 	var err = make([]error, 0)
 	v.AuthId = strings.Replace(v.AuthId, " ", "", -1)
-	if !isValidUUID(v.AuthId) {
-		err = append(err, errors.New("authorisation id field is not valid"))
+	if !common_validation.IsValidUUID(v.AuthId) {
+		err = append(err, errors.New(error_constant.InvalidAuthIdField))
 	}
 	return err
-}
-
-//isValidUUID checks whether the field is in the UUID format
-func isValidUUID(uuid string) bool {
-	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
-	return r.MatchString(uuid)
 }
