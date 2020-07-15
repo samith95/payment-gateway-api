@@ -2,8 +2,8 @@ package authorisation_service
 
 import (
 	"errors"
-	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
 	"payment-gateway-api/api/const/error_constant"
 	dal "payment-gateway-api/api/data_access"
@@ -17,24 +17,26 @@ type authorisationService struct{}
 
 type authorisationServiceInterface interface {
 	AuthoriseTransaction(auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface)
-	GetAllRecords() (string, error_domain.GatewayErrorInterface)
 }
 
 var (
 	AuthorisationService authorisationServiceInterface = &authorisationService{}
+	operationName                                      = "authorisation"
 )
 
+//AuthoriseTransaction authorises a transaction by making sure the request has valid fields
 func (a *authorisationService) AuthoriseTransaction(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {
 	errs := request.ValidateFields()
 	if len(errs) > 0 {
 		return nil, error_domain.New(http.StatusBadRequest, errs...)
 	}
 
-	isReject, err := dal.Db.CheckRejectByCardNumber("authorisation", request.CardDetails.Number)
+	isReject, err := dal.Db.CheckRejectByCardNumber(operationName, request.CardDetails.Number)
 	if err != nil {
+		log.Println(err.Error())
 		return nil, &error_domain.GatewayError{
 			Code:  http.StatusInternalServerError,
-			Error: err.Error(),
+			Error: error_constant.RejectRetrievalFailure,
 		}
 	}
 	if isReject {
@@ -58,6 +60,7 @@ func (a *authorisationService) AuthoriseTransaction(request auth_domain.AuthRequ
 
 	err = dal.Db.InsertAuthRecord(&record)
 	if err != nil {
+		log.Println(err.Error())
 		return nil, &error_domain.GatewayError{
 			Code:  http.StatusInternalServerError,
 			Error: err.Error(),
@@ -72,17 +75,4 @@ func (a *authorisationService) AuthoriseTransaction(request auth_domain.AuthRequ
 	}
 
 	return &response, nil
-}
-
-func (a *authorisationService) GetAllRecords() (string, error_domain.GatewayErrorInterface) {
-	var records []auth.Auth
-
-	records, err := dal.Db.GetAllAuthRecords()
-	if err != nil {
-		return "", error_domain.New(http.StatusBadRequest, err)
-	}
-
-	recordsStr := fmt.Sprintf("%+v\n", records)
-
-	return recordsStr, nil
 }

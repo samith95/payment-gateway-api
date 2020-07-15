@@ -124,18 +124,6 @@ func TestDatabase_UpdateAvailableAmountByAuthID(t *testing.T) {
 	InitTestDb(t)
 	defer Db.Close()
 
-	existingRecord := auth.Auth{
-		ID:               "NewCode",
-		Number:           "123456789123456",
-		ExpiryDate:       "12-2999",
-		AuthorisedAmount: 10,
-		AvailableAmount:  10,
-		Currency:         "LKR",
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
-		DeletedAt:        time.Time{},
-	}
-
 	expectedRecord := &auth.Auth{
 		ID:               "NewCode",
 		Number:           "123456789123456",
@@ -151,7 +139,7 @@ func TestDatabase_UpdateAvailableAmountByAuthID(t *testing.T) {
 	err := Db.InsertAuthRecord(expectedRecord)
 	assert.Nil(t, err)
 
-	err = Db.UpdateAvailableAmountByAuthID(existingRecord.ID, expectedRecord.AvailableAmount, "capture")
+	err = Db.UpdateAvailableAmountByAuthID(expectedRecord.ID, expectedRecord.AvailableAmount, "capture")
 	assert.Nil(t, err)
 
 	_, actualRecord, err := Db.GetAuthRecordByID(expectedRecord.ID)
@@ -163,5 +151,125 @@ func TestDatabase_UpdateAvailableAmountByAuthID(t *testing.T) {
 	assert.EqualValues(t, expectedRecord.AuthorisedAmount, actualRecord.AuthorisedAmount)
 	assert.EqualValues(t, expectedRecord.AvailableAmount, actualRecord.AvailableAmount)
 
-	cleanupDB(existingRecord.ID, t)
+	cleanupDB(expectedRecord.ID, t)
+}
+
+func TestDatabase_UpdateAvailableAmountByAuthID_GetAuthRecordError(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	InitTestDb(t)
+	defer Db.Close()
+
+	record := &auth.Auth{
+		ID:               "NewCode",
+		Number:           "123456789123456",
+		ExpiryDate:       "12-2999",
+		AuthorisedAmount: 10,
+		AvailableAmount:  5,
+		Currency:         "LKR",
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+		DeletedAt:        time.Time{},
+	}
+
+	expectedError := "record not found"
+
+	err := Db.InsertAuthRecord(record)
+	assert.Nil(t, err)
+
+	err = Db.UpdateAvailableAmountByAuthID("invalid_ID", 5, "capture")
+	assert.EqualValues(t, expectedError, err.Error())
+
+	cleanupDB(record.ID, t)
+}
+
+func TestDatabase_HardDeleteAuthRecordByID_DeleteError(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	InitTestDb(t)
+	defer Db.Close()
+
+	record := &auth.Auth{
+		ID:               "NewCode",
+		Number:           "123456789123456",
+		ExpiryDate:       "12-2999",
+		AuthorisedAmount: 10,
+		AvailableAmount:  5,
+		Currency:         "LKR",
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+		DeletedAt:        time.Time{},
+	}
+
+	expectedError := "record not found"
+
+	err := Db.InsertAuthRecord(record)
+	assert.Nil(t, err)
+
+	err = Db.HardDeleteAuthRecordByID("invalid_ID")
+	assert.EqualValues(t, expectedError, err.Error())
+
+	cleanupDB(record.ID, t)
+}
+
+func TestDatabase_SoftDeleteAuthRecordByID_DeleteError(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	InitTestDb(t)
+	defer Db.Close()
+
+	record := &auth.Auth{
+		ID:               "NewCode",
+		Number:           "123456789123456",
+		ExpiryDate:       "12-2999",
+		AuthorisedAmount: 10,
+		AvailableAmount:  5,
+		Currency:         "LKR",
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+		DeletedAt:        time.Time{},
+	}
+
+	expectedError := "record not found"
+
+	err := Db.InsertAuthRecord(record)
+	assert.Nil(t, err)
+
+	err = Db.SoftDeleteAuthRecordByID("invalid_ID")
+	assert.EqualValues(t, expectedError, err.Error())
+
+	cleanupDB(record.ID, t)
+}
+
+func TestDatabase_GetAuthRecordByID_DeleteError(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	InitTestDb(t)
+	defer Db.Close()
+
+	record := &auth.Auth{
+		ID:               "NewCode",
+		Number:           "123456789123456",
+		ExpiryDate:       "12-2999",
+		AuthorisedAmount: 10,
+		AvailableAmount:  5,
+		Currency:         "LKR",
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+		DeletedAt:        time.Time{},
+	}
+
+	expectedError := "record not found"
+
+	err := Db.InsertAuthRecord(record)
+	assert.Nil(t, err)
+
+	_, _, err = Db.GetAuthRecordByID("invalid_ID")
+	assert.EqualValues(t, expectedError, err.Error())
+
+	cleanupDB(record.ID, t)
 }

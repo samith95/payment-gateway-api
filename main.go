@@ -7,7 +7,10 @@ import (
 )
 
 func main() {
-	data_access.Db.Setup(config.DbStoreFilePath)
+	err := data_access.Db.Setup(config.DbStoreFilePath)
+	if err != nil {
+		panic("failed to connect to db: " + err.Error())
+	}
 	defer data_access.Db.Close()
 	app.RunApp()
 }

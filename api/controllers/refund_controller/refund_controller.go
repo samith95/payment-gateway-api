@@ -1,17 +1,17 @@
-package capture_controller
+package refund_controller
 
 import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"payment-gateway-api/api/domain/capture_domain"
 	"payment-gateway-api/api/domain/error_domain"
-	"payment-gateway-api/api/services/capture_service"
+	"payment-gateway-api/api/domain/refund_domain"
+	"payment-gateway-api/api/services/refund_service"
 )
 
-//HandleCaptureRequest handles request for the capture endpoint
-func HandleCaptureRequest(c *gin.Context) {
-	request := capture_domain.CaptureRequest{}
+//HandleRefundRequest handles request for the refund endpoint
+func HandleRefundRequest(c *gin.Context) {
+	request := refund_domain.RefundRequest{}
 
 	err := c.BindJSON(&request)
 	if err != nil {
@@ -23,7 +23,7 @@ func HandleCaptureRequest(c *gin.Context) {
 		return
 	}
 
-	result, apiError := capture_service.CaptureService.CaptureTransactionAmount(request)
+	result, apiError := refund_service.RefundService.RefundTransactionAmount(request)
 	if apiError != nil {
 		c.JSON(apiError.Status(), apiError)
 		return

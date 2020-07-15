@@ -7,7 +7,6 @@ import (
 	"payment-gateway-api/api/data_access"
 	"payment-gateway-api/api/data_access/database_model/auth"
 	"payment-gateway-api/api/data_access/database_model/operation"
-	"payment-gateway-api/api/data_access/database_model/reject"
 	"testing"
 )
 
@@ -18,47 +17,39 @@ var (
 type databaseMock struct{}
 
 func (d databaseMock) Setup(string) error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) InsertAuthRecord(*auth.Auth) error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) GetAuthRecordByID(string) (bool, *auth.Auth, error) {
-	panic("implement me")
-}
-
-func (d databaseMock) GetAllAuthRecords() ([]auth.Auth, error) {
-	panic("implement me")
+	return true, &auth.Auth{}, nil
 }
 
 func (d databaseMock) Close() error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) SoftDeleteAuthRecordByID(string) error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) HardDeleteAuthRecordByID(string) error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) DeleteOperationRecordsByAuthID(string) error {
-	panic("implement me")
-}
-
-func (d databaseMock) InsertRejects(*reject.Reject) error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) CheckRejectByCardNumber(string, string) (bool, error) {
-	panic("implement me")
+	return true, nil
 }
 
 func (d databaseMock) UpdateAvailableAmountByAuthID(string, float32, string) error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) GetOperationByAuthIDAndOperationName(id string, opName string) (bool, operation.Operation, error) {

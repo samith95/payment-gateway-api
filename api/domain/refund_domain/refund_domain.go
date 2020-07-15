@@ -1,4 +1,4 @@
-package capture_domain
+package refund_domain
 
 import (
 	"errors"
@@ -7,27 +7,27 @@ import (
 	"strings"
 )
 
-//CaptureRequest is the format for the request by the capture endpoint
-type CaptureRequest struct {
+//RefundRequest is the format for the request by the refund endpoint
+type RefundRequest struct {
 	AuthId string  `json:"id" binding:"required"`
 	Amount float32 `json:"amount" binding:"required"`
 }
 
-//CaptureResponse is the format for the response by the capture endpoint
-type CaptureResponse struct {
+//RefundResponse is the format for the response by the refund endpoint
+type RefundResponse struct {
 	IsSuccess bool    `json:"success"`
 	Amount    float32 `json:"amount"`
 	Currency  string  `json:"currency"`
 }
 
 //ValidateFields strips all spaces from strings and checks their validity
-func (v *CaptureRequest) ValidateFields() []error {
+func (r *RefundRequest) ValidateFields() []error {
 	var err = make([]error, 0)
-	v.AuthId = strings.Replace(v.AuthId, " ", "", -1)
-	if !common_validation.IsValidUUID(v.AuthId) {
+	r.AuthId = strings.Replace(r.AuthId, " ", "", -1)
+	if !common_validation.IsValidUUID(r.AuthId) {
 		err = append(err, errors.New(error_constant.InvalidAuthIdField))
 	}
-	if !common_validation.IsAmountValid(v.Amount) {
+	if !common_validation.IsAmountValid(r.Amount) {
 		err = append(err, errors.New(error_constant.InvalidAmount))
 	}
 	return err

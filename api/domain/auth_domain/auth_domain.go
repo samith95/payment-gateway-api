@@ -3,24 +3,28 @@ package auth_domain
 import (
 	"errors"
 	"github.com/joeljunstrom/go-luhn"
+	"payment-gateway-api/api/config"
 	"payment-gateway-api/api/const/error_constant"
 	"payment-gateway-api/api/domain/common_validation"
 	"regexp"
 	"strings"
 )
 
+//AuthRequest is the format for the request by the authorisation endpoint
 type AuthRequest struct {
 	CardDetails CardDetails `json:"card_details" binding:"required"`
 	Amount      float32     `json:"amount" binding:"required"`
 	Currency    string      `json:"currency" binding:"required"`
 }
 
+//CardDetails is the format for the management of card details in the authorisation request
 type CardDetails struct {
 	Number     string `json:"card_number"`
 	ExpiryDate string `json:"expiry_date"`
 	Cvv        string `json:"cvv"`
 }
 
+//AuthResponse is the format for the response by the authorisation endpoint
 type AuthResponse struct {
 	AuthID    string  `json:"id"`
 	IsSuccess bool    `json:"success"`
@@ -59,12 +63,12 @@ func isCardNumberValid(cardNumber string) bool {
 
 //isCvvValid checks that the CVV is made of 3 or 4 integers
 func isCvvValid(cvv string) bool {
-	isValid, _ := regexp.MatchString("^[0-9]{3,4}$", cvv)
+	isValid, _ := regexp.MatchString(config.CvvFormatLayout, cvv)
 	return isValid
 }
 
 //isCurrencyCodeValid checks the currency is a 3 letter string
 func isCurrencyCodeValid(currency string) bool {
-	isValid, _ := regexp.MatchString("^[A-Z]{3}$", currency)
+	isValid, _ := regexp.MatchString(config.CurrencyCodeLayout, currency)
 	return isValid
 }

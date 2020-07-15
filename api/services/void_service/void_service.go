@@ -21,13 +21,14 @@ var (
 	operationName                      = "void"
 )
 
+//VoidTransaction cancels a transaction after being authorised by making sure the request and operations are valid
 func (v *voidService) VoidTransaction(request void_domain.VoidRequest) (*void_domain.VoidResponse, error_domain.GatewayErrorInterface) {
 	errs := request.ValidateFields()
 	if len(errs) > 0 {
 		return nil, error_domain.New(http.StatusUnprocessableEntity, errs...)
 	}
 
-	//check db for capture or refund operations
+	//check operation can be executed according to state
 	isValid, err := common_service.CommonService.IsAuthorisedState(operationName, request.AuthId)
 	if err != nil {
 		return nil, error_domain.New(http.StatusInternalServerError, errors.New(error_constant.UnableToCheckForInvalidState))

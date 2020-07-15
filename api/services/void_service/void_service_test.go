@@ -8,7 +8,6 @@ import (
 	"payment-gateway-api/api/data_access"
 	"payment-gateway-api/api/data_access/database_model/auth"
 	"payment-gateway-api/api/data_access/database_model/operation"
-	"payment-gateway-api/api/data_access/database_model/reject"
 	"payment-gateway-api/api/domain/void_domain"
 	"payment-gateway-api/api/services/common_service"
 	"testing"
@@ -27,16 +26,12 @@ func (c commonServiceMock) IsAuthorisedState(operationName string, id string) (b
 	return isAuthorisedState(operationName, id)
 }
 
-func (d databaseMock) InsertRejects(*reject.Reject) error {
-	panic("implement me")
-}
-
 func (d databaseMock) CheckRejectByCardNumber(string, string) (bool, error) {
-	panic("implement me")
+	return true, nil
 }
 
 func (d databaseMock) UpdateAvailableAmountByAuthID(string, float32, string) error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) Setup(string) error {
@@ -44,19 +39,15 @@ func (d databaseMock) Setup(string) error {
 }
 
 func (d databaseMock) InsertAuthRecord(*auth.Auth) error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) GetAuthRecordByID(id string) (bool, *auth.Auth, error) {
 	return getAuthRecordByID(id)
 }
 
-func (d databaseMock) GetAllAuthRecords() ([]auth.Auth, error) {
-	panic("implement me")
-}
-
 func (d databaseMock) Close() error {
-	panic("implement me")
+	return nil
 }
 
 func (d databaseMock) SoftDeleteAuthRecordByID(id string) error {
@@ -125,4 +116,29 @@ func TestVoidService_VoidTransaction(t *testing.T) {
 	assert.EqualValues(t, expectedResponse.IsSuccess, actualResponse.IsSuccess)
 	assert.EqualValues(t, expectedResponse.Amount, actualResponse.Amount)
 	assert.EqualValues(t, expectedResponse.Currency, actualResponse.Currency)
+}
+
+func TestVoidService_VoidTransactionAmount_GetAuthRecordError(t *testing.T) {
+	request := void_domain.VoidRequest{
+		AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28",
+	}
+
+	err1 := errors.New(error_constant.TransactionNotFound)
+	expectedErrors := make([]error, 0)
+	expectedErrors = append(expectedErrors, err1)
+
+	getAuthRecordByID = func(id string) (bool, *auth.Auth, error) {
+		return true, &auth.Auth{}, errors.New("record not found")
+	}
+
+	isAuthorisedState = func(opName, id string) (b bool, err error) {
+		return true, nil
+	}
+
+	common_service.CommonService = &commonServiceMock{}
+	data_access.Db = &databaseMock{}
+
+	actualResponse, err := VoidService.VoidTransaction(request)
+	assert.Nil(t, actualResponse)
+	assert.EqualValues(t, fmt.Sprintf("%v", expectedErrors), err.ErrorMessage())
 }

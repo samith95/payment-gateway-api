@@ -60,7 +60,7 @@ i.e.:
 * Currency conversion will not be implemented, in case currencies don't match, an error will be returned back to the client.
 * Client sends only positive values for amount. Hence during validation, the amount will be checked so that it will fail if negative.
 * I assume to void a transaction, this cannot be in either capture or refund stages of its lifecycle, hence, the service will check that
-in the db whether a refund or a capture operation has previously been done. In fact, the operation table will keep track of what operations (authorisazion,
+in the db whether a refund or a capture operation has previously been done. In fact, the operation table will keep track of what operations (authorisation,
 void, capture and refund) have been executed for each authID. So, if there is more than 1 operation (one being the authorization operation) then,
 according to the requirements, the void cannot be executed.
 
@@ -71,7 +71,7 @@ according to the requirements, the void cannot be executed.
 - DockerHub access to pull image
 
 ### How run the api:
-To pull the docker image from DockerHub, please run the below command
+To pull the docker image from DockerHub and start the service on port 8080, please run the below command:
 ```
 docker run --rm -p 8080:8080 sam195/paymentgatewayapi:latest
 ```
@@ -421,7 +421,9 @@ go test ./... -run Integration
 ```
 
 ### Future work
-* Implementation of proper data structure for financial information such as money amounts.
+* Implementation of proper data structure for financial information such as money amounts. 
+* Any sensitive card details storage should adhere to PCI data security standard requirements, in this solution, the CVV is 
+not persisted into the db as only if needed, these information are required to be stored. 
 * Currency conversion, [API](https://exchangeratesapi.io/) can be used to query foreign exchange rates for currency conversion.
 By integrating with this API, the currency code check can also be improved as the proposed solution only
 checks whether the code is a 3 letter string without checking if it is an actual currency code.

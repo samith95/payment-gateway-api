@@ -1,6 +1,7 @@
 package common_validation
 
 import (
+	"log"
 	"payment-gateway-api/api/config"
 	"regexp"
 	"time"
@@ -8,7 +9,7 @@ import (
 
 //IsValidUUID checks whether the field is in the UUID format
 func IsValidUUID(uuid string) bool {
-	r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
+	r := regexp.MustCompile(config.UUIDCodeLayout)
 	return r.MatchString(uuid)
 }
 
@@ -16,11 +17,13 @@ func IsValidUUID(uuid string) bool {
 func IsExpiryDateValid(expiryDate string) bool {
 	expirationDate, err := time.Parse(config.ExpirationDateLayout, expiryDate)
 	if err != nil {
+		log.Println(err.Error())
 		return false
 	}
 
 	currentTime, err := time.Parse(config.ExpirationDateLayout, time.Now().Format(config.ExpirationDateLayout))
 	if err != nil {
+		log.Println(err.Error())
 		return false
 	}
 

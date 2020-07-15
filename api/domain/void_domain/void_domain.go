@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
+//VoidRequest is the format for the request by the void endpoint
 type VoidRequest struct {
 	AuthId string `json:"id" binding:"required"`
 }
 
+//VoidResponse is the format for the response by the void endpoint
 type VoidResponse struct {
 	IsSuccess bool    `json:"success"`
 	Amount    float32 `json:"amount"`

@@ -22,7 +22,7 @@ var (
 type authoriseServiceMock struct{}
 
 func (a *authoriseServiceMock) GetAllRecords() (string, error_domain.GatewayErrorInterface) {
-	panic("implement me")
+	return "", nil
 }
 
 func (a *authoriseServiceMock) AuthoriseTransaction(request auth_domain.AuthRequest) (*auth_domain.AuthResponse, error_domain.GatewayErrorInterface) {

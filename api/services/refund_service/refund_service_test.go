@@ -1,4 +1,4 @@
-package capture_service
+package refund_service
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"payment-gateway-api/api/data_access"
 	"payment-gateway-api/api/data_access/database_model/auth"
 	"payment-gateway-api/api/data_access/database_model/operation"
-	"payment-gateway-api/api/domain/capture_domain"
+	"payment-gateway-api/api/domain/refund_domain"
 	"payment-gateway-api/api/services/common_service"
 	"testing"
 )
@@ -68,9 +68,9 @@ func (d databaseMock) DeleteOperationRecordsByAuthID(string) error {
 	return nil
 }
 
-func TestCaptureService_CaptureTransactionAmount_InvalidState(t *testing.T) {
+func TestRefundService_RefundTransactionAmount_InvalidState(t *testing.T) {
 
-	request := capture_domain.CaptureRequest{
+	request := refund_domain.RefundRequest{
 		AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28",
 		Amount: 10,
 	}
@@ -85,28 +85,30 @@ func TestCaptureService_CaptureTransactionAmount_InvalidState(t *testing.T) {
 
 	common_service.CommonService = &commonServiceMock{}
 
-	actualResponse, err := CaptureService.CaptureTransactionAmount(request)
+	actualResponse, err := RefundService.RefundTransactionAmount(request)
 	assert.Nil(t, actualResponse)
 	assert.EqualValues(t, fmt.Sprintf("%v", expectedErrors), err.ErrorMessage())
 }
 
-func TestCaptureService_CaptureTransactionAmount(t *testing.T) {
-	request := capture_domain.CaptureRequest{
+func TestRefundService_RefundTransactionAmount(t *testing.T) {
+	request := refund_domain.RefundRequest{
 		AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28",
 		Amount: 5,
 	}
 
-	expectedResponse := capture_domain.CaptureResponse{
+	expectedResponse := refund_domain.RefundResponse{
 		IsSuccess: true,
-		Amount:    5,
+		Amount:    10,
 		Currency:  "GBP",
 	}
+
+	capturedAmount := float32(5)
 
 	getAuthRecordByID = func(id string) (bool, *auth.Auth, error) {
 		return true, &auth.Auth{
 			ExpiryDate:       "12-3999",
-			AvailableAmount:  request.Amount + expectedResponse.Amount,
-			AuthorisedAmount: request.Amount + expectedResponse.Amount,
+			AvailableAmount:  capturedAmount,
+			AuthorisedAmount: capturedAmount + request.Amount,
 			Currency:         expectedResponse.Currency,
 		}, nil
 	}
@@ -126,16 +128,16 @@ func TestCaptureService_CaptureTransactionAmount(t *testing.T) {
 	common_service.CommonService = &commonServiceMock{}
 	data_access.Db = &databaseMock{}
 
-	actualResponse, err := CaptureService.CaptureTransactionAmount(request)
+	actualResponse, err := RefundService.RefundTransactionAmount(request)
 	assert.Nil(t, err)
 	assert.EqualValues(t, expectedResponse.IsSuccess, actualResponse.IsSuccess)
 	assert.EqualValues(t, expectedResponse.Amount, actualResponse.Amount)
 	assert.EqualValues(t, expectedResponse.Currency, actualResponse.Currency)
 }
 
-func TestCaptureService_CaptureTransactionAmount_RejectedCardError(t *testing.T) {
+func TestRefundService_RefundTransactionAmount_RejectedCardError(t *testing.T) {
 
-	request := capture_domain.CaptureRequest{
+	request := refund_domain.RefundRequest{
 		AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28",
 		Amount: 5,
 	}
@@ -149,40 +151,38 @@ func TestCaptureService_CaptureTransactionAmount_RejectedCardError(t *testing.T)
 	}
 
 	checkRejectByCardNumber = func(opName string, cardNumber string) (bool, error) {
-		return false, errors.New("expectedError")
+		return false, errors.New("")
 	}
 
 	common_service.CommonService = &commonServiceMock{}
 	data_access.Db = &databaseMock{}
 
-	actualResponse, err := CaptureService.CaptureTransactionAmount(request)
+	actualResponse, err := RefundService.RefundTransactionAmount(request)
 	assert.Nil(t, actualResponse)
 	assert.EqualValues(t, error_constant.RejectRetrievalFailure, err.ErrorMessage())
 }
 
-func TestCaptureService_CaptureTransactionAmount_UpdateAvailableAmountError(t *testing.T) {
-	request := capture_domain.CaptureRequest{
+func TestRefundService_RefundTransactionAmount_UpdateAvailableAmountError(t *testing.T) {
+	request := refund_domain.RefundRequest{
 		AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28",
 		Amount: 5,
 	}
 
-	expectedResponse := capture_domain.CaptureResponse{
+	expectedResponse := refund_domain.RefundResponse{
 		IsSuccess: true,
-		Amount:    5,
+		Amount:    10,
 		Currency:  "GBP",
 	}
+
+	capturedAmount := float32(5)
 
 	getAuthRecordByID = func(id string) (bool, *auth.Auth, error) {
 		return true, &auth.Auth{
 			ExpiryDate:       "12-3999",
-			AvailableAmount:  request.Amount + expectedResponse.Amount,
-			AuthorisedAmount: request.Amount + expectedResponse.Amount,
+			AvailableAmount:  capturedAmount,
+			AuthorisedAmount: capturedAmount + request.Amount,
 			Currency:         expectedResponse.Currency,
 		}, nil
-	}
-
-	isAuthorisedState = func(opName, id string) (b bool, err error) {
-		return true, nil
 	}
 
 	checkRejectByCardNumber = func(opName string, cardNumber string) (bool, error) {
@@ -193,17 +193,21 @@ func TestCaptureService_CaptureTransactionAmount_UpdateAvailableAmountError(t *t
 		return errors.New("")
 	}
 
+	isAuthorisedState = func(opName, id string) (b bool, err error) {
+		return true, nil
+	}
+
 	common_service.CommonService = &commonServiceMock{}
 	data_access.Db = &databaseMock{}
 
-	actualResponse, err := CaptureService.CaptureTransactionAmount(request)
+	actualResponse, err := RefundService.RefundTransactionAmount(request)
 	assert.Nil(t, actualResponse)
 	assert.EqualValues(t, error_constant.UpdateAvailableAmountFailure, err.ErrorMessage())
 }
 
-func TestCaptureService_CaptureTransactionAmount_GetAuthRecordError(t *testing.T) {
+func TestRefundService_RefundTransactionAmount_GetAuthRecordError(t *testing.T) {
 
-	request := capture_domain.CaptureRequest{
+	request := refund_domain.RefundRequest{
 		AuthId: "fc958d27-8e8e-4825-b3ec-e5236a8e7d28",
 		Amount: 5,
 	}
@@ -223,7 +227,7 @@ func TestCaptureService_CaptureTransactionAmount_GetAuthRecordError(t *testing.T
 	common_service.CommonService = &commonServiceMock{}
 	data_access.Db = &databaseMock{}
 
-	actualResponse, err := CaptureService.CaptureTransactionAmount(request)
+	actualResponse, err := RefundService.RefundTransactionAmount(request)
 	assert.Nil(t, actualResponse)
 	assert.EqualValues(t, fmt.Sprintf("%v", expectedErrors), err.ErrorMessage())
 }

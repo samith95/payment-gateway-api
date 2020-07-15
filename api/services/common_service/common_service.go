@@ -2,6 +2,7 @@ package common_service
 
 import (
 	"errors"
+	"log"
 	"payment-gateway-api/api/const/error_constant"
 	"payment-gateway-api/api/data_access"
 )
@@ -26,6 +27,8 @@ func (c *commonService) IsAuthorisedState(operationName, id string) (bool, error
 		invalidPreviousState = "capture"
 	case "capture":
 		invalidPreviousState = "refund"
+	case "refund":
+		return true, nil
 	default:
 		return false, errors.New(error_constant.OperationNameInvalid)
 	}
@@ -33,6 +36,7 @@ func (c *commonService) IsAuthorisedState(operationName, id string) (bool, error
 	//check whether previous state that are invalid for the current operation are present in db
 	isPresent, _, err := data_access.Db.GetOperationByAuthIDAndOperationName(id, invalidPreviousState)
 	if err != nil {
+		log.Println(err.Error())
 		return false, err
 	}
 
