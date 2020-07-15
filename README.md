@@ -413,9 +413,6 @@ go test ./... -short
 ### Integration tests
 The integration tests test calls between the service and its dependency i.e. database.
 
-Open terminal in the root of the project, If these are run, the limit of translation requests (defined in the Dependant 
-APIs section below) will be reached.
-
 ```
 go test ./... -run Integration
 ```
